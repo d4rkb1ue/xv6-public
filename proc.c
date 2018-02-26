@@ -532,3 +532,10 @@ procdump(void)
     cprintf("\n");
   }
 }
+
+int dump(int pid, void *addr, void *buffer, int size)
+{
+        cprintf("in proc.c dump(), pid = %d, addr = %d, buffer = %d, size = %d\n", pid, (int)addr, (int)buffer, size);
+        memset(buffer, 1, size);
+        return 0;
+}
