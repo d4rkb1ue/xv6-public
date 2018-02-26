@@ -17,9 +17,19 @@ int _dump()
 	//		sleep(5);
 	//	};
 	//}
-
+	int i = 0;
 	/* parent dumps memory of the child */
-	dump(12, (void *)0x1, (void *)0x2, 78);
+	void *buffer = (void *)malloc(PGSIZE);
+	// void *buffer2 = (void *)malloc(PGSIZE);
+	memset(buffer, 0, PGSIZE);
+	// memset(buffer, 1, PGSIZE);
+	dump(12, (void *)0x1, buffer, PGSIZE);
+	for (i = 0; i < PGSIZE; i++)
+	{
+		if (*((char *)buffer + i) != (char)1)
+			printf(1, "buffer[%d] = %d\n", *((char *)buffer + i));
+	}
+	printf(1, "buffer[0] = 1 ? %c\n", *((char *)buffer) == (char)1 ? 'T' : 'F');
 	return 0;
 }
 
