@@ -89,3 +89,15 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+// int sys_dump(int pid, void *addr, void *buffer, int size)
+int
+sys_dump(void)
+{
+	int pid, size;
+	char *addr, *buffer;
+	if (argint(0, &pid) < 0 || argptr(1, &addr, 0) || argint(3, &size) || argptr(2, &buffer, size))
+		return -1;
+	cprintf("in sys_dump, pid = %d, addr = %d, buffer = %d, size = %d\n", pid, (int)addr, (int)buffer, size);
+	return 0;
+}
