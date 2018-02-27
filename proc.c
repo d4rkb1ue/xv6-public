@@ -533,21 +533,36 @@ procdump(void)
   }
 }
 
+/*
+ * return the actually size read by dump
+ * if addr+size is all legal, return the original size
+ * if addr is already overflow, return -1
+ */
 int dump(int pid, void *addr, void *buffer, int size)
 {
 	struct proc *p;
 	//pte_t *pte;
 
         //cprintf("in proc.c dump(), pid = %d, addr = %d, buffer = %d, size = %d\n", pid, (int)addr, (int)buffer, size);
-        memset(buffer, 1, size);
+        //memset(buffer, 1, size);
         acquire(&ptable.lock);
 	for(p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
 		if(p->pid == pid) {
 			//cprintf("[sys:dump]pid = %d, p->sz = %d, (uint)addr = %d, (uint)size = %d\n", pid, p->sz, (uint)addr, (uint)size);					
-			if (copyin(p->pgdir, (uint)addr, buffer, (uint)size) != 0)
-				return -1;
+			if ((uint)addr > p->sz) {
+			//	cprintf("(uint)addr > p->sz, addr = %d, p-sz = %d\n", (uint)addr, p->sz);
+				break;
+			}
+			if ((uint)addr + size > p->sz) {
+			//	cprintf("(uint)addr + size > p->sz, addr = %d, size = %d, p->sz = %d\n", (uint)addr, size, p->sz);
+				size = p->sz - (uint)addr;
+			}
+			if (copyin(p->pgdir, (uint)addr, buffer, (uint)size) != 0) {
+			//	cprintf("copyin return != 0\n");
+				break;
+			}
 			release(&ptable.lock);
-      			return 0;
+      			return size;
 		}
 	}
 	release(&ptable.lock);
