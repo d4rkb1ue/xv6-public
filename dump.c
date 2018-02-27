@@ -10,10 +10,12 @@ int _dump()
 	/* We don't have a good way to list all pids in the system
 	 *      so forking a new process works for testing */ 
 	int i, pid, size;
-	void *buffer, *addr;
+	void *buffer, *target;
 
 	size = 128;
-	addr = 0;
+	target = (void *)malloc(size);
+	memset(target, 2, size);
+	//printf(1, "target[0] = %x\n", (uint)(*(char *)target));	
 
 	pid = fork();
 	if (pid == 0) {
@@ -26,31 +28,27 @@ int _dump()
 	/* parent dumps memory of the child */
 	buffer = (void *)malloc(size);
 	memset(buffer, 0, size);
-	dump(pid, addr, buffer, size);
+	// +3 for test non-page aligned data
+	if (dump(pid, target + 3, buffer, size - 3) != 0)
+		printf(1, "error! dump return non 0\n");
 	
-	for (i = 0; i < size; i++) {
+	for (i = 0; i < size - 3; i++) {
 		if (i % 16 == 0)
-			printf(1, "\n0x%x:", (uint)addr + i);
+			printf(1, "\n0x%x:", (uint)target + i);
 		if (i % 4 == 0)
 			printf(1, "\t0x");
 		if ((uint)*((char *)buffer + i) < 16)
 			printf(1, "0");
-		printf(1, "%x", (uint)*((char *)buffer + i));
+		printf(1, "%x", (uint)*((char *)buffer + i) % 0x100);
 	}
 	printf(1, "\n");
 
-//	for (i = 0; i < PGSIZE; i++)
-//	{
-//		if (*((char *)buffer + i) != (char)1)
-//			printf(1, "buffer[%d] = %d\n", *((char *)buffer + i));
-//	}
-//	printf(1, "buffer[0] = 1 ? %c\n", *((char *)buffer) == (char)1 ? 'T' : 'F');
 	return 0;
 }
 
 int main(int argc, char *argv[])
 {
-	printf(1, "in dump.c main\n");
+	//printf(1, "in dump.c main\n");
 	_dump();
 	exit();
 }

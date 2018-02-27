@@ -538,16 +538,14 @@ int dump(int pid, void *addr, void *buffer, int size)
 	struct proc *p;
 	//pte_t *pte;
 
-        cprintf("in proc.c dump(), pid = %d, addr = %d, buffer = %d, size = %d\n", pid, (int)addr, (int)buffer, size);
+        //cprintf("in proc.c dump(), pid = %d, addr = %d, buffer = %d, size = %d\n", pid, (int)addr, (int)buffer, size);
         memset(buffer, 1, size);
         acquire(&ptable.lock);
 	for(p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
 		if(p->pid == pid) {
-			// found pid
-			// if ((pte = walkpgdir(p->pgdir, addr, 0)) == 0)
-			//	panic("dump: walkpgdir addr should exist");
-			cprintf("[sys:dump]pid = %d, p->sz = %d", pid, p->sz);					
-			//copyout(p->pgdir, (uint)addr, buffer, (uint)size);
+			//cprintf("[sys:dump]pid = %d, p->sz = %d, (uint)addr = %d, (uint)size = %d\n", pid, p->sz, (uint)addr, (uint)size);					
+			if (copyin(p->pgdir, (uint)addr, buffer, (uint)size) != 0)
+				return -1;
 			release(&ptable.lock);
       			return 0;
 		}

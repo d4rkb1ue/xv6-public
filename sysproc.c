@@ -97,6 +97,6 @@ sys_dump(void)
 	char *addr, *buffer;
 	if (argint(0, &pid) < 0 || argptr(1, &addr, 0) || argint(3, &size) || argptr(2, &buffer, size))
 		return -1;
-	cprintf("in sysproc.c sys_dump()\n");
+	//cprintf("in sysproc.c sys_dump()\n");
 	return dump(pid, (void *)addr, (void *)buffer, size);
 }
