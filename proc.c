@@ -568,3 +568,20 @@ int dump(int pid, void *addr, void *buffer, int size)
 	release(&ptable.lock);
 	return -1;
 }
+
+int thread_create(void(*fcn)(void*), void *arg, void*stack)
+{
+	cprintf("in proc.c thread_create\n");
+	return 0;
+}
+
+int thread_join(void)
+{
+	cprintf("in proc.c thread_join\n");
+	return 0;
+}
+
+void thread_exit(void)
+{
+	cprintf("in proc.c thread_exit\n");
+}

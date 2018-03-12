@@ -97,6 +97,28 @@ sys_dump(void)
 	char *addr, *buffer;
 	if (argint(0, &pid) < 0 || argptr(1, &addr, 0) || argint(3, &size) || argptr(2, &buffer, size))
 		return -1;
-	//cprintf("in sysproc.c sys_dump()\n");
 	return dump(pid, (void *)addr, (void *)buffer, size);
+}
+int
+sys_thread_create(void)
+{
+	char *fcn, *arg, *stack;
+	if (argptr(0, &fcn, 0) < 0 || argptr(1, &arg, 0) < 0 || argptr(2, &stack, 4096) < 0) {
+		return -1;
+	}
+
+	return thread_create((void (*)(void*))fcn, (void *)arg, (void *)stack);
+}
+
+int
+sys_thread_join(void)
+{
+	return thread_join();
+}
+
+int
+sys_thread_exit(void)
+{
+	thread_exit();
+	return 0;
 }
