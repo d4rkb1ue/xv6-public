@@ -10,12 +10,15 @@ struct balance {
 struct thread_spinlock {
 	uint locked;
 };
+struct thread_mutex {
+	uint locked;
+};
 
 volatile int total_balance = 0;
 
 int pubint = 0;
 
-struct thread_spinlock lock;
+//struct thread_spinlock lock;
 void thread_spin_init(struct thread_spinlock *lk) {
 	lk->locked = 0;
 }
@@ -27,6 +30,18 @@ void thread_spin_unlock(struct thread_spinlock *lk) {
 	xchg(&lk->locked, 0);
 }
 
+struct thread_mutex mutex;
+void thread_mutex_init(struct thread_mutex *m) {
+	m->locked = 0;
+}
+void thread_mutex_lock(struct thread_mutex *m) {
+	while(xchg(&m->locked, 1) != 0)
+		sleep(1);
+}
+void thread_mutex_unlock(struct thread_mutex *m) {
+	xchg(&m->locked, 0);
+}
+
 volatile unsigned int delay (unsigned int d) {
 	unsigned int i; 
 	for (i = 0; i < d; i++) {
@@ -34,11 +49,6 @@ volatile unsigned int delay (unsigned int d) {
 	}
 
 	return i;   
-}
-void inc(void *arg) {
-	printf(1, "in func inc(), arg: %d\n", (uint)arg);
-	pubint++;
-	thread_exit();
 }
 void do_work(void *arg){
 	int i; 
@@ -48,11 +58,13 @@ void do_work(void *arg){
 	printf(1, "Starting do_work: s:%s\n", b->name);
 
 	for (i = 0; i < b->amount; i++) {
-		thread_spin_lock(&lock);
+		//thread_spin_lock(&lock);
+		thread_mutex_lock(&mutex);	
 		old = total_balance;
 		delay(100000);
 		total_balance = old + 1;
-		thread_spin_unlock(&lock);
+		//thread_spin_unlock(&lock);
+		thread_mutex_unlock(&mutex);
 	}
 
 	printf(1, "Done s:%s\n", b->name);
@@ -69,16 +81,14 @@ int main(int argc, char *argv[]) {
 	void *s1, *s2;
 	int t1, t2, r1, r2;
 
-	thread_spin_init(&lock);
+	//thread_spin_init(&lock);
+	thread_mutex_init(&mutex);
+
 	s1 = malloc(4096);
 	s2 = malloc(4096);
 
 	t1 = thread_create(do_work, (void*)&b1, s1);
-	//printf(1, "passing b1 = %d\n", (uint)&b1);
-	//t1 = thread_create(inc, (void*)&b1, s1);
 	t2 = thread_create(do_work, (void*)&b2, s2); 
-	//printf(1, "passing b2 = %d\n", (uint)&b2);
-	//t2 = thread_create(inc, (void*)&b2, s2);
 	
 	r1 = thread_join();
 	r2 = thread_join();
@@ -87,6 +97,5 @@ int main(int argc, char *argv[]) {
 	printf(1, "Threads finished: (%d):%d, (%d):%d, shared balance:%d\n", 
 			t1, r1, t2, r2, total_balance);
 	
-	//printf(1, "Thread v1 finished, (%d):%d, (%d):%d, pubint: %d\n", t1, r1, t2, r2, pubint);
 	exit();
 }
