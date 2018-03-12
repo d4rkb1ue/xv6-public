@@ -1,15 +1,31 @@
 #include "types.h"
 #include "stat.h"
 #include "user.h"
+#include "x86.h"
 
 struct balance {
 	char name[32];
 	int amount;
 };
+struct thread_spinlock {
+	uint locked;
+};
 
 volatile int total_balance = 0;
 
 int pubint = 0;
+
+struct thread_spinlock lock;
+void thread_spin_init(struct thread_spinlock *lk) {
+	lk->locked = 0;
+}
+void thread_spin_lock(struct thread_spinlock *lk) {
+	while(xchg(&lk->locked, 1) != 0)
+		;
+}
+void thread_spin_unlock(struct thread_spinlock *lk) {
+	xchg(&lk->locked, 0);
+}
 
 volatile unsigned int delay (unsigned int d) {
 	unsigned int i; 
@@ -27,16 +43,16 @@ void inc(void *arg) {
 void do_work(void *arg){
 	int i; 
 	int old;
-
 	struct balance *b = (struct balance*) arg; 
+
 	printf(1, "Starting do_work: s:%s\n", b->name);
 
 	for (i = 0; i < b->amount; i++) {
-		// thread_spin_lock(&lock);
+		thread_spin_lock(&lock);
 		old = total_balance;
 		delay(100000);
 		total_balance = old + 1;
-		//thread_spin_unlock(&lock);
+		thread_spin_unlock(&lock);
 	}
 
 	printf(1, "Done s:%s\n", b->name);
@@ -53,6 +69,7 @@ int main(int argc, char *argv[]) {
 	void *s1, *s2;
 	int t1, t2, r1, r2;
 
+	thread_spin_init(&lock);
 	s1 = malloc(4096);
 	s2 = malloc(4096);
 
