@@ -256,7 +256,7 @@ void
 iappend(uint inum, void *xp, int n)
 {
   char *p = (char*)xp;
-  uint fbn, off, n1;
+  uint fbn, off, n1, next, nextoff;
   struct dinode din;
   char buf[BSIZE];
   uint indirect[NINDIRECT];
@@ -277,12 +277,23 @@ iappend(uint inum, void *xp, int n)
       if(xint(din.addrs[NDIRECT]) == 0){
         din.addrs[NDIRECT] = xint(freeblock++);
       }
-      rsect(xint(din.addrs[NDIRECT]), (char*)indirect);
-      if(indirect[fbn - NDIRECT] == 0){
-        indirect[fbn - NDIRECT] = xint(freeblock++);
-        wsect(xint(din.addrs[NDIRECT]), (char*)indirect);
+      next = din.addrs[NDIRECT];
+      nextoff = fbn - NDIRECT;
+      while(nextoff >= (NINDIRECT - 1)){
+        rsect(xint(next), (char*)indirect);
+        if(indirect[NINDIRECT - 1] == 0){
+          indirect[NINDIRECT - 1] = xint(freeblock++);
+          wsect(xint(next), (char*)indirect);
+        }
+        next = indirect[NINDIRECT - 1];
+        nextoff -= (NINDIRECT - 1);
       }
-      x = xint(indirect[fbn-NDIRECT]);
+      rsect(xint(next), (char*)indirect);
+      if(indirect[nextoff] == 0){
+        indirect[nextoff] = xint(freeblock++);
+        wsect(xint(next), (char*)indirect);
+      }
+      x = xint(indirect[nextoff]);
     }
     n1 = min(n, (fbn + 1) * BSIZE - off);
     rsect(x, buf);

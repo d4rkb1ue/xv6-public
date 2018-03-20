@@ -373,7 +373,7 @@ iunlockput(struct inode *ip)
 static uint
 bmap(struct inode *ip, uint bn)
 {
-  uint addr, *a;
+  uint addr, *a, next;
   struct buf *bp;
 
   if(bn < NDIRECT){
@@ -382,22 +382,33 @@ bmap(struct inode *ip, uint bn)
     return addr;
   }
   bn -= NDIRECT;
+  if((next = ip->addrs[NDIRECT]) == 0)  
+    ip->addrs[NDIRECT] = next = balloc(ip->dev);
 
-  if(bn < NINDIRECT){
-    // Load indirect block, allocating if necessary.
-    if((addr = ip->addrs[NDIRECT]) == 0)
-      ip->addrs[NDIRECT] = addr = balloc(ip->dev);
-    bp = bread(ip->dev, addr);
+  // iterate linked list 
+  while(bn >= (NINDIRECT - 1)){
+    // get next layer buf, data
+    bp = bread(ip->dev, next);
     a = (uint*)bp->data;
-    if((addr = a[bn]) == 0){
-      a[bn] = addr = balloc(ip->dev);
+    // go directly last position = pointer
+    if((next = a[NINDIRECT - 1]) == 0){
+      a[NINDIRECT - 1] = next = balloc(ip->dev);
       log_write(bp);
     }
+    // free the buf
     brelse(bp);
-    return addr;
+    // go next layer
+    bn -= (NINDIRECT - 1);
   }
 
-  panic("bmap: out of range");
+  bp = bread(ip->dev, next);
+  a = (uint*)bp->data;
+  if((addr = a[bn]) == 0){
+    a[bn] = addr = balloc(ip->dev);
+    log_write(bp);
+  }
+  brelse(bp);
+  return addr;
 }
 
 // Truncate inode (discard contents).
